@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuickQuiz // CS &amp; GK Trivia</title>
+<style>
+  :root {
+    --bg: #1A1F2E;
+    --panel: #232938;
+    --text: #EDEAE3;
+    --muted: #8B92A5;
+    --amber: #F2A65A;
+    --green: #6FBF73;
+    --red: #E2645A;
+    --border: #2F3647;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Georgia', 'Times New Roman', serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 16px;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 640px;
+  }
+
+  /* Terminal scoreboard */
+  .scoreboard {
+    background: #11151F;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 18px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 13px;
+    color: var(--green);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    letter-spacing: 0.5px;
+  }
+
+  .scoreboard .dim { color: var(--muted); }
+  .scoreboard .amber-text { color: var(--amber); }
+  .scoreboard .blink {
+    animation: blink 1s steps(2, start) infinite;
+  }
+  @keyframes blink { to { visibility: hidden; } }
+
+  /* Header */
+  header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+
+  header h1 {
+    font-size: 32px;
+    font-weight: normal;
+    letter-spacing: 1px;
+  }
+
+  header .accent {
+    color: var(--amber);
+  }
+
+  header p {
+    color: var(--muted);
+    font-size: 14px;
+    margin-top: 6px;
+    font-family: 'Courier New', Courier, monospace;
+  }
+
+  /* Card */
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 28px;
+  }
+
+  /* Start screen */
+  .start-screen { text-align: center; }
+
+  .start-screen p {
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.6;
+    margin-bottom: 24px;
+    font-family: 'Courier New', Courier, monospace;
+  }
+
+  .category-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+
+  .category-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 14px 10px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 13px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+
+  .category-btn:hover {
+    border-color: var(--amber);
+    background: rgba(242, 166, 90, 0.08);
+  }
+
+  .category-btn.selected {
+    border-color: var(--amber);
+    background: rgba(242, 166, 90, 0.12);
+    color: var(--amber);
+  }
+
+  /* Question screen */
+  .progress-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 18px;
+    font-family: 'Courier New', Courier, monospace;
+  }
+
+  .progress-row .qnum {
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .timer {
+    font-size: 20px;
+    font-weight: bold;
+    color: var(--amber);
+    min-width: 40px;
+    text-align: right;
+  }
+
+  .timer.low { color: var(--red); }
+
+  .progress-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--amber);
+    transition: width 0.3s linear;
+  }
+
+  .question-text {
+    font-size: 19px;
+    line-height: 1.5;
+    margin-bottom: 24px;
+  }
+
+  .options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .option-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 14px 16px;
+    text-align: left;
+    font-family: inherit;
+    font-size: 15px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .option-btn .key {
+    font-family: 'Courier New', Courier, monospace;
+    color: var(--muted);
+    font-size: 13px;
+    min-width: 18px;
+  }
+
+  .option-btn:hover:not(:disabled) {
+    border-color: var(--amber);
+    background: rgba(242, 166, 90, 0.06);
+  }
+
+  .option-btn:disabled {
+    cursor: default;
+  }
+
+  .option-btn.correct {
+    border-color: var(--green);
+    background: rgba(111, 191, 115, 0.12);
+    color: var(--green);
+  }
+
+  .option-btn.correct .key { color: var(--green); }
+
+  .option-btn.incorrect {
+    border-color: var(--red);
+    background: rgba(226, 100, 90, 0.12);
+    color: var(--red);
+  }
+
+  .option-btn.incorrect .key { color: var(--red); }
+
+  /* Results screen */
+  .results-screen { text-align: center; }
+
+  .results-screen .score-display {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 48px;
+    color: var(--amber);
+    margin: 8px 0 4px;
+  }
+
+  .results-screen .score-label {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 28px;
+    font-family: 'Courier New', Courier, monospace;
+  }
+
+  .results-screen .verdict {
+    font-size: 18px;
+    margin-bottom: 28px;
+  }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+
+  .stat-box {
+    background: rgba(0,0,0,0.2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 8px;
+  }
+
+  .stat-box .num {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 22px;
+    color: var(--text);
+  }
+
+  .stat-box .lbl {
+    color: var(--muted);
+    font-size: 11px;
+    font-family: 'Courier New', Courier, monospace;
+    text-transform: uppercase;
+    margin-top: 4px;
+    letter-spacing: 1px;
+  }
+
+  /* Buttons */
+  .primary-btn {
+    background: var(--amber);
+    color: #1A1F2E;
+    border: none;
+    border-radius: 6px;
+    padding: 14px 28px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: opacity 0.15s;
+  }
+
+  .primary-btn:hover { opacity: 0.85; }
+
+  .primary-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .secondary-btn {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 28px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 12px;
+    transition: border-color 0.15s, color 0.15s;
+  }
+
+  .secondary-btn:hover {
+    border-color: var(--amber);
+    color: var(--amber);
+  }
+
+  footer {
+    text-align: center;
+    margin-top: 24px;
+    color: var(--muted);
+    font-size: 12px;
+    font-family: 'Courier New', Courier, monospace;
+  }
+
+  footer a { color: var(--amber); text-decoration: none; }
+
+  @media (max-width: 480px) {
+    .category-grid { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: 1fr; }
+    header h1 { font-size: 26px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <div class="scoreboard">
+    <span><span class="amber-text">SCORE:</span> <span id="sb-score">000</span></span>
+    <span class="dim">|</span>
+    <span><span class="amber-text">Q:</span> <span id="sb-qnum">00</span>/<span id="sb-total">10</span></span>
+    <span class="dim">|</span>
+    <span><span class="amber-text">STREAK:</span> <span id="sb-streak">0</span></span>
+    <span class="blink dim">●</span>
+  </div>
+
+  <header>
+    <h1>Quick<span class="accent">Quiz</span></h1>
+    <p>// 10 questions . pick a category . beat the clock</p>
+  </header>
+
+  <div class="card">
+
+    <!-- START SCREEN -->
+    <div id="start-screen" class="start-screen">
+      <p>10 questions, 15 seconds each.<br>Score points for correct + fast answers. Choose a category to begin.</p>
+      <div class="category-grid" id="category-grid"></div>
+      <button class="primary-btn" id="start-btn" disabled>START QUIZ</button>
+    </div>
+
+    <!-- QUESTION SCREEN -->
+    <div id="question-screen" style="display:none;">
+      <div class="progress-row">
+        <span class="qnum" id="qnum-label">QUESTION 01 / 10</span>
+        <span class="timer" id="timer">15</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+      <div class="question-text" id="question-text"></div>
+      <div class="options" id="options"></div>
+    </div>
+
+    <!-- RESULTS SCREEN -->
+    <div id="results-screen" class="results-screen" style="display:none;">
+      <div class="score-display" id="final-score">000</div>
+      <div class="score-label">TOTAL SCORE</div>
+      <div class="verdict" id="verdict"></div>
+      <div class="stats-row">
+        <div class="stat-box">
+          <div class="num" id="stat-correct">0/10</div>
+          <div class="lbl">Correct</div>
+        </div>
+        <div class="stat-box">
+          <div class="num" id="stat-streak">0</div>
+          <div class="lbl">Best streak</div>
+        </div>
+        <div class="stat-box">
+          <div class="num" id="stat-avg">0.0s</div>
+          <div class="lbl">Avg time</div>
+        </div>
+      </div>
+      <button class="primary-btn" id="retry-btn">PLAY AGAIN</button>
+      <br>
+      <button class="secondary-btn" id="change-cat-btn">CHANGE CATEGORY</button>
+    </div>
+
+  </div>
+
+  <footer>
+    Built with HTML / CSS / JS &mdash; <a href="#" id="footer-link">view source on GitHub</a>
+  </footer>
+
+</div>
+
+<script>
+  // ---------------- Question Bank ----------------
+  const QUESTION_BANK = {
+    "Computer Science": [
+      { q: "Which data structure uses LIFO (Last In, First Out) ordering?", options: ["Queue", "Stack", "Array", "Linked List"], answer: 1 },
+      { q: "What does 'OOP' stand for in programming?", options: ["Object Order Process", "Open Output Protocol", "Object-Oriented Programming", "Optional Object Pattern"], answer: 2 },
+      { q: "Which sorting algorithm has the best average time complexity?", options: ["Bubble Sort", "Quick Sort", "Selection Sort", "Insertion Sort"], answer: 1 },
+      { q: "In C++, which keyword is used to define a class?", options: ["struct", "class", "object", "type"], answer: 1 },
+      { q: "What is the time complexity of binary search?", options: ["O(n)", "O(n^2)", "O(log n)", "O(1)"], answer: 2 },
+      { q: "Which of these is NOT a programming paradigm?", options: ["Procedural", "Functional", "Object-Oriented", "Alphabetical"], answer: 3 },
+      { q: "What does 'SQL' stand for?", options: ["Structured Query Language", "Simple Query Logic", "System Quality Level", "Sequential Query List"], answer: 0 },
+      { q: "Which of these is a connectionless protocol?", options: ["TCP", "FTP", "UDP", "HTTP"], answer: 2 },
+      { q: "What is the default access modifier in a C++ class?", options: ["public", "private", "protected", "internal"], answer: 1 },
+      { q: "Which command lists files in a Linux directory?", options: ["dir", "ls", "list", "show"], answer: 1 }
+    ],
+    "Cybersecurity": [
+      { q: "What does 'VPN' stand for?", options: ["Virtual Private Network", "Verified Public Node", "Virtual Protected Node", "Verified Private Network"], answer: 0 },
+      { q: "Which attack involves overwhelming a server with traffic?", options: ["Phishing", "DDoS", "SQL Injection", "Spoofing"], answer: 1 },
+      { q: "What is 'phishing' primarily used for?", options: ["Speeding up networks", "Stealing sensitive information via deception", "Encrypting files", "Testing software"], answer: 1 },
+      { q: "Which of these is the strongest password practice?", options: ["Using your birthday", "Same password everywhere", "Long, unique, random passwords", "Writing it on a sticky note"], answer: 2 },
+      { q: "What does 'HTTPS' add to HTTP?", options: ["Higher speed", "Encryption via SSL/TLS", "More storage", "Better graphics"], answer: 1 },
+      { q: "What is two-factor authentication (2FA)?", options: ["Two passwords for one account", "An extra verification step beyond password", "Two separate accounts", "A type of firewall"], answer: 1 },
+      { q: "Which term describes malicious software designed to block access until a ransom is paid?", options: ["Spyware", "Ransomware", "Adware", "Trojan"], answer: 1 },
+      { q: "What is a 'firewall' primarily used for?", options: ["Speeding up the internet", "Filtering network traffic for security", "Storing passwords", "Backing up files"], answer: 1 },
+      { q: "What does 'brute-force attack' attempt to do?", options: ["Guess passwords by trying many combinations", "Slow down a network", "Delete files remotely", "Copy hardware"], answer: 0 },
+      { q: "Which of these best describes 'social engineering'?", options: ["A coding technique", "Manipulating people to reveal information", "A firewall configuration", "A type of encryption"], answer: 1 }
+    ],
+    "General Knowledge": [
+      { q: "What is the capital of Australia?", options: ["Sydney", "Melbourne", "Canberra", "Perth"], answer: 2 },
+      { q: "Which planet is known as the Red Planet?", options: ["Venus", "Mars", "Jupiter", "Saturn"], answer: 1 },
+      { q: "Who wrote the play 'Romeo and Juliet'?", options: ["Charles Dickens", "William Shakespeare", "Mark Twain", "Leo Tolstoy"], answer: 1 },
+      { q: "Which is the largest ocean on Earth?", options: ["Atlantic", "Indian", "Arctic", "Pacific"], answer: 3 },
+      { q: "What is the chemical symbol for gold?", options: ["Go", "Gd", "Au", "Ag"], answer: 2 },
+      { q: "In which year did India gain independence?", options: ["1942", "1947", "1950", "1935"], answer: 1 },
+      { q: "Which gas do plants primarily absorb for photosynthesis?", options: ["Oxygen", "Nitrogen", "Carbon Dioxide", "Hydrogen"], answer: 2 },
+      { q: "What is the smallest prime number?", options: ["0", "1", "2", "3"], answer: 2 },
+      { q: "Which country is known as the Land of the Rising Sun?", options: ["China", "Japan", "Thailand", "South Korea"], answer: 1 },
+      { q: "How many continents are there on Earth?", options: ["5", "6", "7", "8"], answer: 2 }
+    ]
+  };
+
+  // ---------------- State ----------------
+  let selectedCategory = null;
+  let questions = [];
+  let currentIndex = 0;
+  let score = 0;
+  let streak = 0;
+  let bestStreak = 0;
+  let correctCount = 0;
+  let answerTimes = [];
+  let timeLeft = 15;
+  let timerInterval = null;
+  let answered = false;
+
+  const TIME_PER_QUESTION = 15;
+  const TOTAL_QUESTIONS = 10;
+
+  // ---------------- DOM refs ----------------
+  const startScreen = document.getElementById('start-screen');
+  const questionScreen = document.getElementById('question-screen');
+  const resultsScreen = document.getElementById('results-screen');
+  const categoryGrid = document.getElementById('category-grid');
+  const startBtn = document.getElementById('start-btn');
+  const qnumLabel = document.getElementById('qnum-label');
+  const timerEl = document.getElementById('timer');
+  const progressFill = document.getElementById('progress-fill');
+  const questionTextEl = document.getElementById('question-text');
+  const optionsEl = document.getElementById('options');
+  const retryBtn = document.getElementById('retry-btn');
+  const changeCatBtn = document.getElementById('change-cat-btn');
+
+  const sbScore = document.getElementById('sb-score');
+  const sbQnum = document.getElementById('sb-qnum');
+  const sbTotal = document.getElementById('sb-total');
+  const sbStreak = document.getElementById('sb-streak');
+
+  sbTotal.textContent = TOTAL_QUESTIONS;
+
+  // ---------------- Init category buttons ----------------
+  Object.keys(QUESTION_BANK).forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'category-btn';
+    btn.textContent = cat;
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedCategory = cat;
+      startBtn.disabled = false;
+    });
+    categoryGrid.appendChild(btn);
+  });
+
+  startBtn.addEventListener('click', startQuiz);
+  retryBtn.addEventListener('click', startQuiz);
+  changeCatBtn.addEventListener('click', () => {
+    resultsScreen.style.display = 'none';
+    startScreen.style.display = 'block';
+  });
+
+  // ---------------- Quiz Flow ----------------
+  function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function startQuiz() {
+    questions = shuffle(QUESTION_BANK[selectedCategory]).slice(0, TOTAL_QUESTIONS);
+    currentIndex = 0;
+    score = 0;
+    streak = 0;
+    bestStreak = 0;
+    correctCount = 0;
+    answerTimes = [];
+
+    startScreen.style.display = 'none';
+    resultsScreen.style.display = 'none';
+    questionScreen.style.display = 'block';
+
+    updateScoreboard();
+    showQuestion();
+  }
+
+  function showQuestion() {
+    answered = false;
+    timeLeft = TIME_PER_QUESTION;
+    const q = questions[currentIndex];
+
+    qnumLabel.textContent = `QUESTION ${String(currentIndex + 1).padStart(2, '0')} / ${TOTAL_QUESTIONS}`;
+    questionTextEl.textContent = q.q;
+    optionsEl.innerHTML = '';
+
+    const keys = ['A', 'B', 'C', 'D'];
+    q.options.forEach((opt, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'option-btn';
+      btn.innerHTML = `<span class="key">${keys[i]}</span><span>${opt}</span>`;
+      btn.addEventListener('click', () => selectAnswer(i, btn));
+      optionsEl.appendChild(btn);
+    });
+
+    timerEl.textContent = timeLeft;
+    timerEl.classList.remove('low');
+    progressFill.style.width = '100%';
+
+    if (timerInterval) clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+      timeLeft--;
+      timerEl.textContent = timeLeft;
+      progressFill.style.width = (timeLeft / TIME_PER_QUESTION * 100) + '%';
+      if (timeLeft <= 5) timerEl.classList.add('low');
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        selectAnswer(-1, null); // time's up, no selection
+      }
+    }, 1000);
+  }
+
+  function selectAnswer(selectedIdx, btnEl) {
+    if (answered) return;
+    answered = true;
+    clearInterval(timerInterval);
+
+    const q = questions[currentIndex];
+    const timeUsed = TIME_PER_QUESTION - timeLeft;
+    answerTimes.push(timeUsed);
+
+    const allBtns = optionsEl.querySelectorAll('.option-btn');
+    allBtns.forEach(b => b.disabled = true);
+
+    if (selectedIdx === q.answer) {
+      // correct
+      btnEl.classList.add('correct');
+      correctCount++;
+      streak++;
+      bestStreak = Math.max(bestStreak, streak);
+      // scoring: base 10 points + time bonus (up to 5)
+      const timeBonus = Math.max(0, Math.floor((timeLeft / TIME_PER_QUESTION) * 5));
+      score += 10 + timeBonus;
+    } else {
+      // incorrect or timeout
+      if (selectedIdx !== -1) {
+        allBtns[selectedIdx].classList.add('incorrect');
+      }
+      allBtns[q.answer].classList.add('correct');
+      streak = 0;
+    }
+
+    updateScoreboard();
+
+    setTimeout(() => {
+      currentIndex++;
+      if (currentIndex < TOTAL_QUESTIONS) {
+        showQuestion();
+      } else {
+        showResults();
+      }
+    }, 1200);
+  }
+
+  function updateScoreboard() {
+    sbScore.textContent = String(score).padStart(3, '0');
+    sbQnum.textContent = String(Math.min(currentIndex + 1, TOTAL_QUESTIONS)).padStart(2, '0');
+    sbStreak.textContent = streak;
+  }
+
+  function showResults() {
+    questionScreen.style.display = 'none';
+    resultsScreen.style.display = 'block';
+
+    document.getElementById('final-score').textContent = String(score).padStart(3, '0');
+    document.getElementById('stat-correct').textContent = `${correctCount}/${TOTAL_QUESTIONS}`;
+    document.getElementById('stat-streak').textContent = bestStreak;
+
+    const avgTime = answerTimes.reduce((a, b) => a + b, 0) / answerTimes.length;
+    document.getElementById('stat-avg').textContent = avgTime.toFixed(1) + 's';
+
+    const verdictEl = document.getElementById('verdict');
+    let verdict;
+    if (correctCount === TOTAL_QUESTIONS) verdict = "Perfect run. Flawless.";
+    else if (correctCount >= 8) verdict = "Excellent. Nearly flawless.";
+    else if (correctCount >= 6) verdict = "Solid score. Well done.";
+    else if (correctCount >= 4) verdict = "Decent attempt. Room to grow.";
+    else verdict = "Tough round. Try again?";
+    verdictEl.textContent = verdict;
+
+    sbScore.textContent = String(score).padStart(3, '0');
+    sbQnum.textContent = String(TOTAL_QUESTIONS).padStart(2, '0');
+  }
+</script>
+
+</body>
+</html>
