@@ -28,7 +28,7 @@ Option 2: Host on GitHub Pages
 Upload index.html to a GitHub repository (root folder)
 Go to Settings → Pages
 Set source to the main branch, / (root) folder
-Visit https://yourusername.github.io/repo-name/
+Visit https://rahularyann1.github.io/repo-name/
 
 
 Tech Stack
